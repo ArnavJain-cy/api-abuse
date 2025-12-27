@@ -4,12 +4,13 @@ import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
-  const [data, setData] = useState({ logs: [], alerts: [] });
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ logs: [], alerts: [] });
 
   const fetchData = async () => {
     try {
       const res = await axios.get('https://api-abuse-frontend.vercel.app/');
+
       // const res = await axios.get('http://localhost:5000/dashboard/stats');
       setData(res.data);
       setLoading(false);
