@@ -6,12 +6,15 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ logs: [], alerts: [] });
+  const [showModal, setShowModal] = useState(false);
+  const [bannedIPs, setBannedIPs] = useState([]);
+  const [loadingIPs, setLoadingIPs] = useState(false);
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('https://api-abuse-frontend.vercel.app/');
+      // const res = await axios.get('https://api-abuse-frontend.vercel.app/');
 
-      // const res = await axios.get('http://localhost:5000/dashboard/stats');
+      const res = await axios.get('http://localhost:5000/dashboard/stats');
       setData(res.data);
       setLoading(false);
     } catch (err) {
@@ -26,6 +29,33 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const fetchBannedIPs = async () => {
+    setLoadingIPs(true);
+    try {
+      const res = await axios.get('http://localhost:5000/dashboard/banned-ips');
+      setBannedIPs(res.data.bannedIPs);
+    } catch (err) {
+      console.error('Error fetching banned IPs:', err);
+    } finally {
+      setLoadingIPs(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setShowModal(true);
+    fetchBannedIPs();
+  };
+
+  const handleUnbanIP = async (ip) => {
+    try {
+      await axios.post('http://localhost:5000/dashboard/unban-ip', { ip });
+      setBannedIPs(bannedIPs.filter(bannedIP => bannedIP !== ip));
+    } catch (err) {
+      console.error('Error unbanning IP:', err);
+      alert('Failed to unban IP. Please try again.');
+    }
+  };
+
   // Process data for Chart (Group logs by time)
   // This is a quick hack to visualize "Requests per update"
   const chartData = data.logs.map((log, index) => ({
@@ -35,7 +65,15 @@ export default function Dashboard() {
 
   return (
     <div className="p-10 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-8 text-blue-400">Sentinel Protocol Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-400">Sentinel Protocol Dashboard</h1>
+        <button
+          onClick={handleOpenModal}
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+        >
+          Manage Banned IPs
+        </button>
+      </div>
       
       <div className="grid grid-cols-2 gap-8">
         {/* CHART SECTION */}
@@ -94,6 +132,46 @@ export default function Dashboard() {
           </tbody>
         </table>
       </div>
+
+      {/* Banned IPs Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-red-400">Banned IP Addresses</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            
+            {loadingIPs ? (
+              <p className="text-gray-400">Loading banned IPs...</p>
+            ) : bannedIPs.length === 0 ? (
+              <p className="text-gray-400">No IPs are currently banned.</p>
+            ) : (
+              <div className="space-y-2">
+                {bannedIPs.map((ip, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 bg-gray-700 rounded-lg border border-red-500/30"
+                  >
+                    <span className="font-mono text-yellow-400">{ip}</span>
+                    <button
+                      onClick={() => handleUnbanIP(ip)}
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded transition-colors"
+                    >
+                      Unban
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
