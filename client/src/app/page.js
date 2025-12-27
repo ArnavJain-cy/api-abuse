@@ -9,7 +9,8 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/dashboard/stats');
+      const res = await axios.get('https://api-abuse-frontend.vercel.app/');
+      // const res = await axios.get('http://localhost:5000/dashboard/stats');
       setData(res.data);
       setLoading(false);
     } catch (err) {
