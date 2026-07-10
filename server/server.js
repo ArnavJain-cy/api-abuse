@@ -16,10 +16,15 @@ redisClient.connect()
     .then(() => console.log("✅ Redis Connected"))
     .catch(err => console.error(err));
 
+
+
 /* ---------------- DATABASE ---------------- */
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected"))
     .catch(err => console.error(err));
+
+
+
 
 /* ---------------- MODELS ---------------- */
 const Log = mongoose.model('Log', new mongoose.Schema({
@@ -38,6 +43,10 @@ const Alert = mongoose.model('Alert', new mongoose.Schema({
     severity: String
 }));
 
+
+
+
+
 /* ---------------- MIDDLEWARE ---------------- */
 app.use(cors({
     origin: ["http://localhost:3000", "https://api-abuse-frontend.vercel.app"],
@@ -55,7 +64,6 @@ app.use((req, res, next) => {
         if (ip === '::1') ip = '127.0.0.1';
         if (ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
 
-        // Only log if we haven't logged this request yet
         if (!res.headersSent) { 
              new Log({
                 ip: ip,
@@ -69,6 +77,9 @@ app.use((req, res, next) => {
     };
     next();
 });
+
+
+
 
 /* ---------------- SECURITY CHECKS ---------------- */
 
@@ -88,6 +99,9 @@ const checkBan = async (req, res, next) => {
 };
 
 app.use('/api', checkBan);
+
+
+
 
 // 3. RATE LIMITER
 const rateLimiter = async (req, res, next) => {
@@ -130,6 +144,9 @@ const rateLimiter = async (req, res, next) => {
 
 app.use(rateLimiter);
 
+
+
+
 /* ---------------- ROUTES ---------------- */
 
 // Reset Redis
@@ -142,12 +159,16 @@ app.get('/reset-redis', async (req, res) => {
     }
 });
 
+
+
 // Dashboard Stats
 app.get('/dashboard/stats', async (_, res) => {
     const logs = await Log.find().sort({ timestamp: -1 }).limit(50);
     const alerts = await Alert.find().sort({ timestamp: -1 }).limit(10);
     res.json({ logs, alerts });
 });
+
+
 
 // Get Banned IPs (Merges both ban types)
 app.get('/dashboard/banned-ips', async (_, res) => {
@@ -166,6 +187,8 @@ app.get('/dashboard/banned-ips', async (_, res) => {
       res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // Unban IP
 app.post('/dashboard/unban-ip', async (req, res) => {
@@ -189,10 +212,12 @@ app.post('/dashboard/unban-ip', async (req, res) => {
   }
 });
 
+
+
+
 // Mock User
 const MOCK_USER = { username: "admin", password: "password123" };
 
-// --- LOGIN ROUTE (FIXED FOR DASHBOARD VISIBILITY) ---
 app.post('/api/login', async (req, res) => {
     const ip = req.ip;
     const failKey = `login_failures:${ip}`;
@@ -204,15 +229,12 @@ app.post('/api/login', async (req, res) => {
         
         if (failures && parseInt(failures) >= 5) {
             
-            // ✅ FIX: Create Alert in MongoDB (So it shows in 'Security Alerts')
             await new Alert({
                 ip: ip,
                 type: "Brute Force Attempt",
                 severity: "High"
             }).save();
 
-            // ✅ FIX: Set Block Key in Redis (So it shows in 'Manage Banned IPs')
-            // Blocking for 10 minutes (600s)
             await redisClient.set(blockKey, 'true', { EX: 600 });
 
             return res.status(429).json({ error: "Too many failed attempts. IP blocked for 10 minutes." });
@@ -239,6 +261,8 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+
+
 // Balance Check
 app.get('/api/balance', async (req, res) => {
     try {
@@ -249,6 +273,8 @@ app.get('/api/balance', async (req, res) => {
         res.status(500).json({ error: "Server Error" });
     }
 });
+
+
 
 // Transaction
 app.post('/api/transaction', async (req, res) => {
