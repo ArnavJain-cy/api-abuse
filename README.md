@@ -188,6 +188,15 @@ Click Unban.
 ![Dashboard Screenshot](./assets/bannedipaddresses.png)
 You can now rerun tests safely.
 
+note:
+(For Environmental Variables)
+create a .env file in server folder which includes:
+PORT=5000
+MONGO_URI=(your mongo db url)
+REDIS_URL=(your redis url)
+
+
+
 📊 Dashboard Features
 Live traffic monitoring
 

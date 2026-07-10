@@ -7,6 +7,7 @@ const redis = require('redis');
 
 const app = express();
 app.set("trust proxy", 1);
+app.set("trust proxy", 1);
 
 /* ---------------- REDIS SETUP ---------------- */
 const redisClient = redis.createClient({
@@ -19,10 +20,15 @@ redisClient.connect()
 
 
 
+
+
 /* ---------------- DATABASE ---------------- */
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected"))
     .catch(err => console.error(err));
+
+
+
 
 
 
@@ -48,8 +54,13 @@ const Alert = mongoose.model('Alert', new mongoose.Schema({
 
 
 
+
+
+
+
 /* ---------------- MIDDLEWARE ---------------- */
 app.use(cors({
+    origin: ["http://localhost:3000", "https://api-abuse-three.vercel.app/"],
     origin: ["http://localhost:3000", "https://api-abuse-three.vercel.app/"],
     credentials: true
 }));
@@ -59,6 +70,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // 1. LOGGER (MUST BE AT THE TOP to capture blocked requests)
 app.use((req, res, next) => {
+
+    res.on("finish", async () => {
+
+        const ip =
+            req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
+            req.ip ||
+            "unknown";
+
+        try {
+            await Log.create({
+                ip,
 
     res.on("finish", async () => {
 
@@ -80,12 +102,25 @@ app.use((req, res, next) => {
             });
         } catch (err) {
             console.log(err);
+                reason:
+                    res.statusCode === 403 || res.statusCode === 429
+                        ? "Security Violation"
+                        : "Standard Access"
+            });
+        } catch (err) {
+            console.log(err);
         }
+
+    });
+
 
     });
 
     next();
 });
+
+
+
 
 
 
@@ -108,6 +143,9 @@ const checkBan = async (req, res, next) => {
 };
 
 app.use('/api', checkBan);
+
+
+
 
 
 
@@ -156,6 +194,9 @@ app.use(rateLimiter);
 
 
 
+
+
+
 /* ---------------- ROUTES ---------------- */
 
 // Reset Redis
@@ -170,12 +211,16 @@ app.get('/reset-redis', async (req, res) => {
 
 
 
+
+
 // Dashboard Stats
 app.get('/dashboard/stats', async (_, res) => {
     const logs = await Log.find().sort({ timestamp: -1 }).limit(50);
     const alerts = await Alert.find().sort({ timestamp: -1 }).limit(10);
     res.json({ logs, alerts });
 });
+
+
 
 
 
@@ -196,6 +241,8 @@ app.get('/dashboard/banned-ips', async (_, res) => {
       res.status(500).json({ error: error.message });
   }
 });
+
+
 
 
 
@@ -220,6 +267,9 @@ app.post('/dashboard/unban-ip', async (req, res) => {
       res.status(500).json({ error: error.message });
   }
 });
+
+
+
 
 
 
@@ -272,6 +322,8 @@ app.post('/api/login', async (req, res) => {
 
 
 
+
+
 // Balance Check
 app.get('/api/balance', async (req, res) => {
     try {
@@ -282,6 +334,8 @@ app.get('/api/balance', async (req, res) => {
         res.status(500).json({ error: "Server Error" });
     }
 });
+
+
 
 
 
@@ -314,6 +368,10 @@ app.post('/api/transaction', async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
