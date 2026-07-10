@@ -50,7 +50,10 @@ const Alert = mongoose.model('Alert', new mongoose.Schema({
 
 /* ---------------- MIDDLEWARE ---------------- */
 app.use(cors({
-    origin: ["http://localhost:3000", "https://api-abuse-three.vercel.app/"],
+    origin: [
+        "http://localhost:3000",
+        "https://api-abuse-three.vercel.app"
+    ],
     credentials: true
 }));
 
