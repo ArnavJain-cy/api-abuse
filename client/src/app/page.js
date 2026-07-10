@@ -9,12 +9,11 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [bannedIPs, setBannedIPs] = useState([]);
   const [loadingIPs, setLoadingIPs] = useState(false);
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-abuse.onrender.com';
 
   const fetchData = async () => {
     try {
-      // const res = await axios.get('https://api-abuse-frontend.vercel.app/');
-
-      const res = await axios.get('http://localhost:5000/dashboard/stats');
+      const res = await axios.get(`${apiBaseUrl}/dashboard/stats`);
       setData(res.data);
       setLoading(false);
     } catch (err) {
@@ -32,7 +31,7 @@ export default function Dashboard() {
   const fetchBannedIPs = async () => {
     setLoadingIPs(true);
     try {
-      const res = await axios.get('http://localhost:5000/dashboard/banned-ips');
+      const res = await axios.get(`${apiBaseUrl}/dashboard/banned-ips`);
       setBannedIPs(res.data.bannedIPs);
     } catch (err) {
       console.error('Error fetching banned IPs:', err);
@@ -48,7 +47,7 @@ export default function Dashboard() {
 
   const handleUnbanIP = async (ip) => {
     try {
-      await axios.post('http://localhost:5000/dashboard/unban-ip', { ip });
+      await axios.post(`${apiBaseUrl}/dashboard/unban-ip`, { ip });
       setBannedIPs(bannedIPs.filter(bannedIP => bannedIP !== ip));
     } catch (err) {
       console.error('Error unbanning IP:', err);
